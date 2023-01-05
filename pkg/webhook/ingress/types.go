@@ -10,6 +10,8 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	"github.com/clastix/capsule/pkg/webhook/utils"
 )
 
 const (
@@ -21,6 +23,7 @@ type Ingress interface {
 	Namespace() string
 	Name() string
 	HostnamePathsPairs() map[string]sets.String
+	SetIngressClass(string)
 }
 
 type NetworkingV1 struct {
@@ -42,6 +45,24 @@ func (n NetworkingV1) IngressClass() (res *string) {
 	}
 
 	return
+}
+
+func (n NetworkingV1) SetIngressClass(ingressClassName string) {
+	if n.Spec.IngressClassName == nil {
+		if a := n.GetAnnotations(); a != nil {
+			if _, ok := a[annotationName]; ok {
+				a[annotationName] = ingressClassName
+
+				return
+			}
+		}
+	}
+	// Assign in case the IngressClassName property was not set
+	if version, _ := utils.GetK8sVersion(); version.Major() == 1 && version.Minor() < 18 {
+		n.Annotations[annotationName] = ingressClassName
+	} else {
+		n.Spec.IngressClassName = &ingressClassName
+	}
 }
 
 func (n NetworkingV1) Namespace() string {
@@ -96,6 +117,24 @@ func (n NetworkingV1Beta1) IngressClass() (res *string) {
 	return
 }
 
+func (n NetworkingV1Beta1) SetIngressClass(ingressClassName string) {
+	if n.Spec.IngressClassName == nil {
+		if a := n.GetAnnotations(); a != nil {
+			if _, ok := a[annotationName]; ok {
+				a[annotationName] = ingressClassName
+
+				return
+			}
+		}
+	}
+	// Assign in case the IngressClassName property was not set
+	if version, _ := utils.GetK8sVersion(); version.Major() == 1 && version.Minor() < 18 {
+		n.Annotations[annotationName] = ingressClassName
+	} else {
+		n.Spec.IngressClassName = &ingressClassName
+	}
+}
+
 func (n NetworkingV1Beta1) Namespace() string {
 	return n.GetNamespace()
 }
@@ -146,6 +185,18 @@ func (e Extension) IngressClass() (res *string) {
 	}
 
 	return
+}
+
+func (e Extension) SetIngressClass(ingressClassName string) {
+	if a := e.GetAnnotations(); a != nil {
+		if _, ok := a[annotationName]; ok {
+			a[annotationName] = ingressClassName
+
+			return
+		}
+	}
+	// Assign in case the IngressClassName property was not set
+	e.Annotations[annotationName] = ingressClassName
 }
 
 func (e Extension) Namespace() string {

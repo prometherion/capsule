@@ -38,6 +38,7 @@ import (
 	"github.com/clastix/capsule/pkg/configuration"
 	"github.com/clastix/capsule/pkg/indexer"
 	"github.com/clastix/capsule/pkg/webhook"
+	"github.com/clastix/capsule/pkg/webhook/defaults"
 	"github.com/clastix/capsule/pkg/webhook/ingress"
 	namespacewebhook "github.com/clastix/capsule/pkg/webhook/namespace"
 	"github.com/clastix/capsule/pkg/webhook/networkpolicy"
@@ -245,6 +246,7 @@ func main() {
 		route.OwnerReference(utils.InCapsuleGroups(cfg, namespacewebhook.OwnerReferenceHandler(), ownerreference.Handler(cfg))),
 		route.Cordoning(tenant.CordoningHandler(cfg), tenant.ResourceCounterHandler()),
 		route.Node(utils.InCapsuleGroups(cfg, node.UserMetadataHandler(cfg, kubeVersion))),
+		route.Defaults(defaults.Handler(cfg)),
 	)
 
 	nodeWebhookSupported, _ := utils.NodeWebhookSupported(kubeVersion)
